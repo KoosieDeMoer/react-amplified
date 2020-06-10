@@ -1,70 +1,48 @@
 /* src/App.js */
-import React, { useEffect, useState } from 'react'
-import { API, graphqlOperation } from 'aws-amplify'
-import { createTodo } from './graphql/mutations'
-import { listTodos } from './graphql/queries'
+import React, { useState } from 'react'
 
 import { withAuthenticator } from '@aws-amplify/ui-react'
 
-const initialState = { name: '', description: '' }
+const initialState = { InValue: 1962 }
 
 const App = () => {
   const [formState, setFormState] = useState(initialState)
-  const [todos, setTodos] = useState([])
 
-  useEffect(() => {
-    fetchTodos()
-  }, [])
 
   function setInput(key, value) {
     setFormState({ ...formState, [key]: value })
   }
 
-  async function fetchTodos() {
-    try {
-      const todoData = await API.graphql(graphqlOperation(listTodos))
-      const todos = todoData.data.listTodos.items
-      setTodos(todos)
-    } catch (err) { console.log('error fetching todos') }
-  }
+  async function doRestCall() {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formState)
+  };
+  console.log('doRestCall requestOptions', requestOptions);
 
-  async function addTodo() {
-    try {
-      if (!formState.name || !formState.description) return
-      const todo = { ...formState }
-      setTodos([...todos, todo])
-      setFormState(initialState)
-      await API.graphql(graphqlOperation(createTodo, {input: todo}))
-    } catch (err) {
-      console.log('error creating todo:', err)
-    }
+  fetch('https://4nn3vo9ru4.execute-api.us-east-1.amazonaws.com/prod/calc', requestOptions)
+      .then(response => {
+        console.log("fetch response", response);
+        return response.json()
+      }
+      )
+      .then(data => document.getElementById('fred').innerHTML = data.OutValue );  
+  
   }
 
   return (
     <div style={styles.container}>
-      <h2>Amplify Todos</h2>
+      <h2>Lambda REST call with authorisation</h2>
+      <h5 id="fred">Initial</h5>
       <input
-        onChange={event => setInput('name', event.target.value)}
+        onChange={event => setInput('InValue', event.target.value)}
         style={styles.input}
-        value={formState.name} 
-        placeholder="Name"
+        value={formState.InValue} 
+        placeholder="1962"
       />
-      <input
-        onChange={event => setInput('description', event.target.value)}
-        style={styles.input}
-        value={formState.description}
-        placeholder="Description"
-      />
-      <button style={styles.button} onClick={addTodo}>Create Todo</button>
-      {
-        todos.map((todo, index) => (
-          <div key={todo.id ? todo.id : index} style={styles.todo}>
-            <p style={styles.todoName}>{todo.name}</p>
-            <p style={styles.todoDescription}>{todo.description}</p>
-          </div>
-        ))
-      }
-    </div>
+      <button style={styles.button} onClick={doRestCall}>Call Lambda Calculation</button>
+     </div>
   )
 }
 
