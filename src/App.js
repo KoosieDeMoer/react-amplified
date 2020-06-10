@@ -2,6 +2,33 @@
 import React, { useState } from 'react'
 
 import { withAuthenticator } from '@aws-amplify/ui-react'
+import 'cross-fetch/polyfill';
+import * as AmazonCognitoIdentity from "amazon-cognito-identity-js";
+
+import aws_exports from './aws-exports.js';
+
+const poolData = {UserPoolId: aws_exports.aws_user_pools_id, ClientId: aws_exports.aws_user_pools_web_client_id};
+const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+const cognitoUser = userPool.getCurrentUser();
+
+console.log('loadAccountData() cognitoUser', cognitoUser);  
+
+var token;
+
+if (cognitoUser != null) {
+    cognitoUser.getSession((err, session) => {
+      if (err) {
+        console.log(err);
+      } else if (!session.isValid()) {
+        console.log("Invalid session.");
+      } else {
+        token = session.getIdToken().getJwtToken();
+        console.log("IdToken: " + token);
+      }
+    });
+  } else {
+    console.log("User not found.");
+  }
 
 const initialState = { InValue: 1962 }
 
@@ -16,7 +43,8 @@ const App = () => {
   async function doRestCall() {
     const requestOptions = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer ' + token },
       body: JSON.stringify(formState)
   };
   console.log('doRestCall requestOptions', requestOptions);
