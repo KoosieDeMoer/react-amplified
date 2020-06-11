@@ -1,36 +1,26 @@
-from __future__ import print_function
-
-import boto3
 import json
 
-print('Loading function')
 
+def lambda_handler(event, context):
 
-def handler(event, context):
-    '''Provide an event that contains the following keys:
+    jwtToken = event['requestContext']['authorizer']
+    print('jwtToken ', jwtToken)
 
-      - operation: one of the operations in the operations dict below
-      - tableName: required for operations that interact with DynamoDB
-      - payload: a parameter to pass to the operation being performed
-    '''
-    #print("Received event: " + json.dumps(event, indent=2))
+    username = event['requestContext']['authorizer']['claims']['cognito:username']
+    print('username ', username)
 
-    operation = event['operation']
+    obj = json.loads(event['body'])
 
-    if 'tableName' in event:
-        dynamo = boto3.resource('dynamodb').Table(event['tableName'])
+    inValue = obj['InValue']
 
-    operations = {
-        'create': lambda x: dynamo.put_item(**x),
-        'read': lambda x: dynamo.get_item(**x),
-        'update': lambda x: dynamo.update_item(**x),
-        'delete': lambda x: dynamo.delete_item(**x),
-        'list': lambda x: dynamo.scan(**x),
-        'echo': lambda x: x,
-        'ping': lambda x: 'pong'
+    # This is where AWS Lambda (or even HTTP REST) uncontaminated python functions
+    # should be called, eg
+
+    outValue = inValue + 1
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+        'OutValue': outValue
+        })
     }
-
-    if operation in operations:
-        return operations[operation](event.get('payload'))
-    else:
-        raise ValueError('Unrecognized operation "{}"'.format(operation))
