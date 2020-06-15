@@ -1,6 +1,3 @@
-const randomBytes = require('crypto').randomBytes;
-
-const AWS = require('aws-sdk');
 
 exports.handler = (event, context, callback) => {
     if (!event.requestContext.authorizer) {
@@ -8,13 +5,11 @@ exports.handler = (event, context, callback) => {
       return;
     }
 
-    const rideId = toUrlString(randomBytes(16));
-    console.log('Received event (', rideId, '): ', event);
-
     // Because we're using a Cognito User Pools authorizer, all of the claims
     // included in the authentication token are provided in the request context.
     // This includes the username as well as other attributes.
     const username = event.requestContext.authorizer.claims['cognito:username'];
+    console.log('username', username);
 
     // The body field of the event in a proxy integration is a raw string.
     // In order to extract meaningful values, we need to first parse this string
@@ -41,13 +36,6 @@ exports.handler = (event, context, callback) => {
         });
 };
 
-
-function toUrlString(buffer) {
-    return buffer.toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
-}
 
 function errorResponse(errorMessage, awsRequestId, callback) {
   callback(null, {
